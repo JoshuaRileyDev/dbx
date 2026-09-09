@@ -5,6 +5,8 @@ services:
       dockerfile: deploy/Dockerfile
     ports:
       - "4224:4224"
+    expose:
+      - "4224"
     environment:
       - DBX_PASSWORD=changeme
       # Native Streamable HTTP MCP is served by this same Web listener at /mcp.
@@ -18,6 +20,20 @@ services:
     volumes:
       - dbx-data:/app/data
     restart: unless-stopped
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dbx.rule=Host(`${DBX_DOMAIN:-dbx.localhost}`)
+      - traefik.http.routers.dbx.entrypoints=web
+      - traefik.http.routers.dbx.service=dbx
+      - traefik.http.services.dbx.loadbalancer.server.port=4224
+      - traefik.docker.network=${DOKPLOY_NETWORK:-dokploy-network}
 
 volumes:
   dbx-data:
+
+networks:
+  dokploy-network:
+    name: ${DOKPLOY_NETWORK:-dokploy-network}
+    external: true
